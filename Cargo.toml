@@ -1,15 +1,16 @@
 [package]
-name = "yaggy-rs"
+name = "yaggy"
 version = "0.1.0"
 authors = ["Yuri Egorov <ysegorov@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/yagnist/yaggy-rs"
+description = "Simple tool to administer remote servers using ssh"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "yg"
+name = "yaggy"
 
 [dependencies]
 clap = "~2.33.1"
