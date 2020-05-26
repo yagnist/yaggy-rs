@@ -1,5 +1,21 @@
 
+use std::path::Path;
+
 use clap::{crate_description, crate_version, App, Arg, ArgMatches, AppSettings, SubCommand};
+
+fn is_int(v: String) -> Result<(), String> {
+    match v.parse::<u16>() {
+        Ok(_) => Ok(()),
+        Err(_) => Err(String::from("value must be valid positive integer")),
+    }
+}
+
+fn path_exists(p: String) -> Result<(), String> {
+    match Path::new(p.as_str()).exists() {
+        true => Ok(()),
+        false => Err(String::from("path does not exist or is inaccessible")),
+    }
+}
 
 pub fn cli() -> ArgMatches<'static> {
     App::new("yaggy")
@@ -18,6 +34,7 @@ pub fn cli() -> ArgMatches<'static> {
                     .long("port")
                     .takes_value(true)
                     .display_order(2)
+                    .validator(is_int)
                     .help("Remote port to connect to (optional)"))
                 .arg(Arg::with_name("user")
                     .short("u")
@@ -55,6 +72,11 @@ pub fn cli() -> ArgMatches<'static> {
                 .arg(Arg::with_name("dry_run")
                     .long("dry-run")
                     .help("Dry-run mode to test connection and validate scenario syntax"))
+                .arg(Arg::with_name("verbose")
+                    .short("v")
+                    .long("verbose")
+                    .multiple(true)
+                    .help("Increases logging verbosity (specify twice for maximum verbosity)"))
                 .arg(Arg::with_name("host")
                     .required(true)
                     .index(1)
@@ -62,6 +84,7 @@ pub fn cli() -> ArgMatches<'static> {
                 .arg(Arg::with_name("filename")
                      .required(true)
                      .index(2)
+                     .validator(path_exists)
                      .help("Yaggy scenario to execute on the remote host")),
             SubCommand::with_name("tags")
                 .about("Show tags tree built from yaggy scenario")
