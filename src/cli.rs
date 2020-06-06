@@ -17,7 +17,7 @@ fn path_exists(p: String) -> Result<(), String> {
     }
 }
 
-pub fn cli() -> ArgMatches<'static> {
+pub(super) fn cli() -> ArgMatches<'static> {
     App::new("yaggy")
         .version(crate_version!())
         .about(crate_description!())
