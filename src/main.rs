@@ -1,10 +1,12 @@
 
 mod cli;
-mod errors;
+mod error;
+mod path_ext;
 mod runner;
 mod scenario;
 
-pub(crate) use errors::{Result, YaggyError};
+pub(crate) use error::{Result, Error};
+pub(crate) use path_ext::PathExt;
 pub(crate) use scenario::Scenario;
 
 use runner::Runner;

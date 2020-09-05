@@ -2,14 +2,12 @@
 mod logging;
 mod remote_params;
 
-use std::fs;
-use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use clap::ArgMatches;
 
 use log::{trace, debug, info, warn, error};
 
-use crate::{Scenario, Result, YaggyError};
+use crate::{Scenario, Result, PathExt, Error};
 use remote_params::RemoteParams;
 
 #[derive(Debug)]
@@ -54,39 +52,51 @@ impl Runner {
             .with_remote_params(rparams)
     }
     pub(crate) fn run(&self) -> Result<()> {
-        let filename = Path::new(self.filename.as_str()).canonicalize()?;
-        let basedir = filename.parent().ok_or(YaggyError::UnknownBasedir)?;
+        let path = Path::new(self.filename.as_str())
+            .canonicalize()
+            .map_err(|e| Error::Canonicalization { path: self.filename.clone(), source: e})?;
+        let basedir = path.parent()
+            .ok_or(Error::Basedir { path: self.filename.clone() })?;
+
+        let filename_str = path.to_str()
+            .ok_or(Error::ScenarioFilename { path: self.filename.clone() })?;
 
         let logdir = basedir.join(self.logdir.as_str());
-        ensure_dir_exists(logdir.as_path())
-            .map_err(|x| {
-                eprintln!("Error ensuring log directory is available, path: \"{}\"", logdir.as_path().display());
-                x
-            })?;
+        let logdir = logdir
+            .as_path()
+            .ensure_dir_exists()
+            .map_err(|e| Error::Logdir { path: logdir.to_string_lossy().to_string(), source: e })?
+            .ensure_is_writable()
+            .map_err(|e| Error::NotWritable { kind: "Logdir".to_string(), path: logdir.to_string_lossy().to_string(), source: e })?;
 
         let runtimedir = basedir.join(self.runtimedir.as_str());
-        ensure_dir_exists(runtimedir.as_path())
-            .map_err(|x| {
-                eprintln!("Error ensuring runtime directory is available, path: \"{}\"", runtimedir.as_path().display());
-                x
-            })?;
+        let _runtimedir = runtimedir
+            .as_path()
+            .ensure_dir_exists()
+            .map_err(|e| Error::Runtimedir { path: runtimedir.to_string_lossy().to_string(), source: e })?
+            .ensure_is_writable()
+            .map_err(|e| Error::NotWritable { kind: "Runtimedir".to_string(), path: runtimedir.to_string_lossy().to_string(), source: e })?;
 
         let logfile = logdir.join(
             format!("{}.{}.{}.log",
-                filename.file_stem().unwrap().to_str().unwrap_or("undef"),
+                path.file_stem().unwrap().to_str().unwrap_or("undef"),
                 self.remote_params.hostname,
                 chrono::Local::now().format("%Y%m%d%H%M%S")
             ));
         logging::setup_logging(self.verbosity, logfile.as_path())?;
-
-        let _scenario = Scenario::new(filename);
-
 
         info!("staring...");
         trace!("trace output...");
         debug!("debugging...");
         warn!("here goes some warning...");
         error!("ooops, something bad happened...");
+
+        let scenario = Scenario::new(filename_str.to_string());
+
+        for cmd in scenario.lines()? {
+            let line = cmd?;
+            info!("{}", line);
+        }
 
         Ok(())
     }
@@ -119,16 +129,4 @@ impl Runner {
         self.remote_params = rparams;
         self
     }
-}
-
-fn ensure_dir_exists(path: &Path) -> Result<()> {
-    if path.is_dir() {
-        return Ok(());
-    }
-    let perms = fs::Permissions::from_mode(0o700);
-
-    fs::create_dir(&path)?;
-    fs::set_permissions(&path, perms)?;
-
-    Ok(())
 }

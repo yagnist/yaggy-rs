@@ -10,7 +10,8 @@ description = "Simple tool to administer remote servers using ssh"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "yaggy"
+path = "src/main.rs"
+name = "yg"
 
 [dependencies]
 clap = "~2.33.1"
