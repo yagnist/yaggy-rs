@@ -1,8 +1,12 @@
 
+mod line;
+
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
 use crate::{Result, Error};
+use line::{ParsedLine, ParsedResult};
+
 
 #[derive(Debug, Default)]
 pub(crate) struct Scenario {
@@ -37,7 +41,7 @@ pub(crate) struct ScenarioLines {
 
 
 impl Iterator for ScenarioLines {
-    type Item = Result<String>;
+    type Item = Result<ParsedLine>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut line = String::new();
@@ -62,7 +66,11 @@ impl Iterator for ScenarioLines {
 
                     if !is_empty && !is_comment {
                         if !is_multiline {
-                            break Some(Ok(buf))
+                            let parsed: ParsedResult = buf.parse();
+                            match parsed {
+                                Ok(x) => break Some(Ok(x)),
+                                Err(x) => break Some(Err(Error::Syntax { path: self.filename.clone(), line: self.line_num, message: x.to_string() }))
+                            }
                         } else {
                             line.clear();
                         }
