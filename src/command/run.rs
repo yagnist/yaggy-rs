@@ -20,12 +20,12 @@ pub struct CmdRun {
 
 impl CmdRun {
     pub fn new(parsed: ParsedLine) -> Self {
-        let is_local = parsed.command.starts_with("LRUN");
+        let is_local = parsed.command.starts_with("L");
         let can_fail = parsed.command.ends_with('!');
         let is_conditional = parsed.command.ends_with('?');
         let condition = match parsed.command.as_str() {
-            "SUCCEED?" => Some(Condition::OnSuccess),
-            "FAILED?" => Some(Condition::OnFailure),
+            "SUCCEED?" | "LSUCCEED?" => Some(Condition::OnSuccess),
+            "FAILED?" | "LFAILED?" => Some(Condition::OnFailure),
             _ => None,
         };
 

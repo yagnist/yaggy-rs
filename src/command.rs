@@ -48,7 +48,7 @@ impl CommandBuilder {
 
     pub fn from_parsed_line(parsed: ParsedLine) -> CommandBuilderResult {
         match parsed.command.as_str() {
-            "RUN" | "RUN!" | "LRUN" | "LRUN!" | "SUCCEED?" | "FAILED?" => Ok(Box::new(CmdRun::new(parsed))),
+            "RUN" | "RUN!" | "LRUN" | "LRUN!" | "SUCCEED?" | "FAILED?" | "LSUCCEED?" | "LFAILED?" => Ok(Box::new(CmdRun::new(parsed))),
             x => Err(CommandError { message: format!("unknown command: {}", x) }),
         }
     }
