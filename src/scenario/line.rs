@@ -31,10 +31,10 @@ enum State {
 
 #[derive(Debug)]
 pub struct ParsedLine {
-    reference: String,
-    command: String,
-    back_reference: String,
-    args: String,
+    pub reference: String,
+    pub command: String,
+    pub back_reference: String,
+    pub args: String,
 }
 
 impl FromStr for ParsedLine {

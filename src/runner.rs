@@ -32,7 +32,40 @@ pub(crate) struct Runner {
     remote_params: RemoteParams,
 }
 
+// private methods
+impl Runner {
+    fn new() -> Self {
+        Runner {
+            ..Default::default()
+        }
+    }
+    fn with_verbosity(mut self, verbosity: u8) -> Self {
+        self.verbosity = verbosity;
+        self
+    }
+    fn with_mode(mut self, mode: Mode) -> Self {
+        self.mode = mode;
+        self
+    }
+    fn with_filename(mut self, filename: String) -> Self {
+        self.filename = filename;
+        self
+    }
+    fn with_logdir(mut self, logdir: String) -> Self {
+        self.logdir = logdir;
+        self
+    }
+    fn with_runtimedir(mut self, runtimedir: String) -> Self {
+        self.runtimedir = runtimedir;
+        self
+    }
+    fn with_remote_params(mut self, rparams: RemoteParams) -> Self {
+        self.remote_params = rparams;
+        self
+    }
+}
 
+// public methods
 impl Runner {
     pub(crate) fn from_args(args: &ArgMatches) -> Self {
         let verbosity = args.occurrences_of("verbose") as u8;
@@ -69,14 +102,6 @@ impl Runner {
             .ensure_is_writable()
             .map_err(|e| Error::NotWritable { kind: "Logdir".to_string(), path: logdir.to_string_lossy().to_string(), source: e })?;
 
-        let runtimedir = basedir.join(self.runtimedir.as_str());
-        let _runtimedir = runtimedir
-            .as_path()
-            .ensure_dir_exists()
-            .map_err(|e| Error::Runtimedir { path: runtimedir.to_string_lossy().to_string(), source: e })?
-            .ensure_is_writable()
-            .map_err(|e| Error::NotWritable { kind: "Runtimedir".to_string(), path: runtimedir.to_string_lossy().to_string(), source: e })?;
-
         let logfile = logdir.join(
             format!("{}.{}.{}.log",
                 path.file_stem().unwrap().to_str().unwrap_or("undef"),
@@ -84,6 +109,14 @@ impl Runner {
                 chrono::Local::now().format("%Y%m%d%H%M%S")
             ));
         logging::setup_logging(self.verbosity, logfile.as_path())?;
+
+        let runtimedir = basedir.join(self.runtimedir.as_str());
+        let _runtimedir = runtimedir
+            .as_path()
+            .ensure_dir_exists()
+            .map_err(|e| Error::Runtimedir { path: runtimedir.to_string_lossy().to_string(), source: e })?
+            .ensure_is_writable()
+            .map_err(|e| Error::NotWritable { kind: "Runtimedir".to_string(), path: runtimedir.to_string_lossy().to_string(), source: e })?;
 
         info!("staring...");
         trace!("trace output...");
@@ -93,40 +126,12 @@ impl Runner {
 
         let scenario = Scenario::new(filename_str.to_string());
 
-        for cmd in scenario.lines()? {
-            let line = cmd?;
-            info!("{}", line);
+        for cmd in scenario.commands()? {
+            let cmd = cmd?;
+            // print!("{:?}", cmd);
+            info!("{}", cmd);
         }
 
         Ok(())
-    }
-    fn new() -> Self {
-        Runner {
-            ..Default::default()
-        }
-    }
-    fn with_verbosity(mut self, verbosity: u8) -> Self {
-        self.verbosity = verbosity;
-        self
-    }
-    fn with_mode(mut self, mode: Mode) -> Self {
-        self.mode = mode;
-        self
-    }
-    fn with_filename(mut self, filename: String) -> Self {
-        self.filename = filename;
-        self
-    }
-    fn with_logdir(mut self, logdir: String) -> Self {
-        self.logdir = logdir;
-        self
-    }
-    fn with_runtimedir(mut self, runtimedir: String) -> Self {
-        self.runtimedir = runtimedir;
-        self
-    }
-    fn with_remote_params(mut self, rparams: RemoteParams) -> Self {
-        self.remote_params = rparams;
-        self
     }
 }
