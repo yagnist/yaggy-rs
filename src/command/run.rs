@@ -1,4 +1,6 @@
 
+use std::rc::Rc;
+
 use crate::ParsedLine;
 use super::Command;
 
@@ -11,6 +13,8 @@ enum Condition {
 
 #[derive(Debug)]
 pub struct CmdRun {
+    filename: Rc<String>,
+    line_num: u32,
     parsed: ParsedLine,
     is_local: bool,
     can_fail: bool,
@@ -19,7 +23,7 @@ pub struct CmdRun {
 }
 
 impl CmdRun {
-    pub fn new(parsed: ParsedLine) -> Self {
+    pub fn new(parsed: ParsedLine, filename: &Rc<String>, line_num: u32) -> Self {
         let is_local = parsed.command.starts_with("L");
         let can_fail = parsed.command.ends_with('!');
         let is_conditional = parsed.command.ends_with('?');
@@ -30,6 +34,8 @@ impl CmdRun {
         };
 
         CmdRun {
+            filename: Rc::clone(filename),
+            line_num: line_num,
             parsed: parsed,
             is_local: is_local,
             can_fail: can_fail,

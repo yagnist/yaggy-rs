@@ -3,6 +3,7 @@ mod run;
 
 use std::error;
 use std::fmt;
+use std::rc::Rc;
 
 // use crate::Error;
 // use crate::Result;
@@ -46,9 +47,9 @@ pub(crate) struct CommandBuilder;
 
 impl CommandBuilder {
 
-    pub fn from_parsed_line(parsed: ParsedLine) -> CommandBuilderResult {
+    pub fn from_parsed_line(parsed: ParsedLine, filename: &Rc<String>, line_num: u32) -> CommandBuilderResult {
         match parsed.command.as_str() {
-            "RUN" | "RUN!" | "LRUN" | "LRUN!" | "SUCCEED?" | "FAILED?" | "LSUCCEED?" | "LFAILED?" => Ok(Box::new(CmdRun::new(parsed))),
+            "RUN" | "RUN!" | "LRUN" | "LRUN!" | "SUCCEED?" | "FAILED?" | "LSUCCEED?" | "LFAILED?" => Ok(Box::new(CmdRun::new(parsed, filename, line_num))),
             x => Err(CommandError { message: format!("unknown command: {}", x) }),
         }
     }
