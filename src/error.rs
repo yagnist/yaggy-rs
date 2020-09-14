@@ -52,6 +52,11 @@ pub(crate) enum Error {
         line: u32,
         message: String,
     },
+    Command {
+        path: Rc<String>,
+        line: u32,
+        message: String,
+    },
 }
 
 impl fmt::Display for Error {
@@ -89,6 +94,9 @@ impl fmt::Display for Error {
             },
             Self::Syntax { path, line, message } => {
                 ("Syntax", format!("{}, file: \"{}\", line: {}", message, path, line))
+            },
+            Self::Command { path, line, message } => {
+                ("Command", format!("{}, file: \"{}\", line: {}", message, path, line))
             },
         };
 

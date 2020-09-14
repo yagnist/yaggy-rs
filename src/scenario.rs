@@ -104,8 +104,7 @@ impl Iterator for ScenarioCommands {
 
         match parsed {
             Some(Ok(x)) => {
-                let cmd = CommandBuilder::from_parsed_line(x, &self.lines.filename, self.lines.line_num)
-                    .map_err(|e| Error::Syntax { path: Rc::clone(&self.lines.filename), line: self.lines.line_num, message: format!("{}", e).to_string() });
+                let cmd = CommandBuilder::from_parsed_line(x, &self.lines.filename, self.lines.line_num);
                 Some(cmd)
             },
             Some(Err(x)) => Some(Err(x)),
