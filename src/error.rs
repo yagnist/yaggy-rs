@@ -2,6 +2,7 @@
 use std::io;
 use std::fmt;
 use std::result::Result as StdResult;
+use std::rc::Rc;
 
 use log;
 
@@ -10,21 +11,21 @@ pub(crate) type Result<T> = StdResult<T, Error>;
 #[derive(Debug)]
 pub(crate) enum Error {
     Canonicalization {
-        path: String,
+        path: Rc<String>,
         source: io::Error,
     },
     Basedir {
-        path: String,
+        path: Rc<String>,
     },
     ScenarioFilename {
-        path: String,
+        path: Rc<String>,
     },
     ScenarioOpen {
-        path: String,
+        path: Rc<String>,
         source: io::Error,
     },
     ScenarioRead {
-        path: String,
+        path: Rc<String>,
         source: io::Error,
     },
     Logdir {
@@ -47,7 +48,7 @@ pub(crate) enum Error {
         source: log::SetLoggerError,
     },
     Syntax {
-        path: String,
+        path: Rc<String>,
         line: u32,
         message: String,
     },

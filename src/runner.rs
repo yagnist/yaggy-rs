@@ -3,6 +3,8 @@ mod logging;
 mod remote_params;
 
 use std::path::Path;
+use std::rc::Rc;
+
 use clap::ArgMatches;
 
 use log::{trace, debug, info, warn, error};
@@ -26,7 +28,7 @@ impl Default for Mode {
 pub(crate) struct Runner {
     verbosity: u8,
     mode: Mode,
-    filename: String,
+    filename: Rc<String>,
     logdir: String,
     runtimedir: String,
     remote_params: RemoteParams,
@@ -48,7 +50,7 @@ impl Runner {
         self
     }
     fn with_filename(mut self, filename: String) -> Self {
-        self.filename = filename;
+        self.filename = Rc::new(filename);
         self
     }
     fn with_logdir(mut self, logdir: String) -> Self {
@@ -87,12 +89,12 @@ impl Runner {
     pub(crate) fn run(&self) -> Result<()> {
         let path = Path::new(self.filename.as_str())
             .canonicalize()
-            .map_err(|e| Error::Canonicalization { path: self.filename.clone(), source: e})?;
+            .map_err(|e| Error::Canonicalization { path: Rc::clone(&self.filename), source: e})?;
         let basedir = path.parent()
-            .ok_or(Error::Basedir { path: self.filename.clone() })?;
+            .ok_or(Error::Basedir { path: Rc::clone(&self.filename) })?;
 
         let filename_str = path.to_str()
-            .ok_or(Error::ScenarioFilename { path: self.filename.clone() })?;
+            .ok_or(Error::ScenarioFilename { path: Rc::clone(&self.filename) })?;
 
         let logdir = basedir.join(self.logdir.as_str());
         let logdir = logdir
