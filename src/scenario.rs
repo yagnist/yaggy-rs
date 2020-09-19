@@ -3,6 +3,7 @@ mod line;
 
 use std::fs::File;
 use std::io::{BufRead, BufReader};
+use std::path::Path;
 use std::rc::Rc;
 
 use crate::{Result, Error, Command, CommandBuilder};
@@ -31,7 +32,7 @@ impl Scenario {
     }
     pub(crate) fn commands(&self) -> Result<ScenarioCommands> {
         let lines = self.lines()?;
-        Ok(ScenarioCommands { lines })
+        Ok(ScenarioCommands { lines , included: None})
     }
 
 }
@@ -94,22 +95,60 @@ impl Iterator for ScenarioLines {
 #[derive(Debug)]
 pub(crate) struct ScenarioCommands {
     lines: ScenarioLines,
+    included: Option<Box<ScenarioCommands>>,
 }
 
 impl Iterator for ScenarioCommands {
     type Item = Result<Box<dyn Command>>;
 
     fn next(&mut self) -> Option<Self::Item> {
+
+        // NB. commands from included scenario
+        if let Some(ref mut included) = self.included {
+            match included.next() {
+                item @ Some(_) => return item,
+                None => self.included = None,
+            }
+        }
+
+        // NB. scenario own commands
         let parsed = self.lines.next();
 
         match parsed {
-            Some(Ok(x)) => {
-                let cmd = CommandBuilder::from_parsed_line(x, &self.lines.filename, self.lines.line_num);
+            Some(Ok(parsed)) => {
+                let command = parsed.command.clone();
+                if command.as_str() == "INCLUDE" {
+                    match self.include(&parsed) {
+                        Ok(included) => {
+                            self.included = Some(Box::new(included));
+                        },
+                        Err(included) => {
+                            return Some(Err(included));
+                        }
+                    }
+                }
+                let cmd = CommandBuilder::from_parsed_line(parsed, &self.lines.filename, self.lines.line_num);
                 Some(cmd)
             },
-            Some(Err(x)) => Some(Err(x)),
+            Some(Err(parsed)) => Some(Err(parsed)),
             None => None,
         }
 
+    }
+}
+
+impl ScenarioCommands {
+    fn include(&self, parsed: &ParsedLine) -> Result<ScenarioCommands> {
+        let to_include = parsed.args.clone();
+        let path = Path::new(self.lines.filename.as_str())
+            .parent()
+            .ok_or(Error::Command { path: Rc::clone(&self.lines.filename), line: self.lines.line_num, message: "INCLUDE error".to_string() })?;
+        let filename = path.join(to_include.as_str());
+        let filename = filename
+            .to_str()
+            .ok_or(Error::ScenarioFilename { path: Rc::new(to_include) })?;
+
+        let scenario = Scenario::new(filename.to_string());
+        scenario.commands()
     }
 }
