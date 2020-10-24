@@ -1,30 +1,12 @@
 
-use std::rc::Rc;
-
-use crate::ParsedLine;
-use super::Command;
+use crate::Result;
+use super::{Command, validators};
 
 
-#[derive(Debug)]
-pub struct CmdFetch {
-    filename: Rc<String>,
-    line_num: u32,
-    parsed: ParsedLine,
+pub(crate) fn validate(command: &Command) -> Result<()> {
+    validators::has_no_reference(&command)?;
+    validators::has_no_back_reference(&command)?;
+    validators::has_args(&command)?;
+
+    Ok(())
 }
-
-impl CmdFetch {
-    pub fn new(parsed: ParsedLine, filename: &Rc<String>, line_num: u32) -> Self {
-        CmdFetch {
-            filename: Rc::clone(filename),
-            line_num: line_num,
-            parsed: parsed,
-        }
-    }
-}
-
-impl Command for CmdFetch {
-    fn display(&self) -> String {
-        format!("{}", self.parsed)
-    }
-}
-

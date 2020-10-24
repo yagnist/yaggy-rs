@@ -1,40 +1,26 @@
 
-use std::rc::Rc;
-
-use crate::ParsedLine;
-use super::Command;
+use crate::Result;
+use super::{Command, validators};
 
 
-#[derive(Debug)]
-enum Mode {
-    Tag,
-    Untag,
+pub(crate) fn validate_tag(command: &Command) -> Result<()> {
+    validators::has_no_reference(&command)?;
+    validators::has_no_back_reference(&command)?;
+    validators::has_args(&command)?;
+
+    // TODO
+    // validate tag
+
+    Ok(())
 }
 
+pub(crate) fn validate_untag(command: &Command) -> Result<()> {
+    validators::has_no_reference(&command)?;
+    validators::has_no_back_reference(&command)?;
+    validators::has_args(&command)?;
 
-#[derive(Debug)]
-pub struct CmdTag {
-    filename: Rc<String>,
-    line_num: u32,
-    parsed: ParsedLine,
-    mode: Mode,
+    // TODO
+    // validate untag
+
+    Ok(())
 }
-
-impl CmdTag {
-    pub fn new(parsed: ParsedLine, filename: &Rc<String>, line_num: u32) -> Self {
-        let mode = if parsed.command == "TAG" { Mode::Tag } else { Mode::Untag };
-        CmdTag {
-            filename: Rc::clone(filename),
-            line_num: line_num,
-            parsed: parsed,
-            mode: mode,
-        }
-    }
-}
-
-impl Command for CmdTag {
-    fn display(&self) -> String {
-        format!("{}", self.parsed)
-    }
-}
-

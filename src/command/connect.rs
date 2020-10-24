@@ -1,50 +1,31 @@
 
-use std::rc::Rc;
-
-use crate::ParsedLine;
-use super::Command;
+use crate::Result;
+use super::{Command, validators};
 
 
-#[derive(Debug)]
-enum Mode {
-    Connect,
-    Reconnect,
-    Disconnect,
+pub(crate) fn validate(command: &Command) -> Result<()> {
+    validators::has_no_reference(&command)?;
+    validators::has_no_back_reference(&command)?;
+    validators::has_no_args(&command)?;
+
+    Ok(())
 }
 
+pub(crate) fn validate_reconnect(command: &Command) -> Result<()> {
+    validators::has_no_reference(&command)?;
+    validators::has_no_back_reference(&command)?;
 
-#[derive(Debug)]
-pub struct CmdConnect {
-    filename: Rc<String>,
-    line_num: u32,
-    parsed: ParsedLine,
-    mode: Mode,
-    is_conditional: bool,
+    // TODO
+    // validate reconnect
+
+    Ok(())
 }
 
-impl CmdConnect {
-    pub fn new(parsed: ParsedLine, filename: &Rc<String>, line_num: u32) -> Self {
-        let mode = match parsed.command.as_str() {
-            "CONNECT" => Mode::Connect,
-            "RECONNECT" | "RECONNECT?"=> Mode::Reconnect,
-            "DISCONNECT" => Mode::Disconnect,
-            _ => unreachable!(),
-        };
-        let is_conditional = parsed.command.ends_with('?');
+pub(crate) fn validate_reconnect_if(command: &Command) -> Result<()> {
+    validators::has_no_reference(&command)?;
 
-        CmdConnect {
-            filename: Rc::clone(filename),
-            line_num: line_num,
-            parsed: parsed,
-            mode: mode,
-            is_conditional: is_conditional,
-        }
-    }
+    // TODO
+    // validate reconnect_if
+
+    Ok(())
 }
-
-impl Command for CmdConnect {
-    fn display(&self) -> String {
-        format!("{}", self.parsed)
-    }
-}
-

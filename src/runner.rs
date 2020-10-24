@@ -130,6 +130,8 @@ impl Runner {
 
         for cmd in scenario.commands()? {
             let cmd = cmd?;
+
+            cmd.validate()?;
             // print!("{:?}", cmd);
             info!("{}", cmd);
         }

@@ -141,3 +141,17 @@ impl fmt::Display for ParsedLine {
         write!(f, "{} {} {} {}", self.reference, self.command, self.back_reference, self.args)
     }
 }
+
+impl ParsedLine {
+    pub fn has_reference(&self) -> bool {
+        !self.reference.is_empty()
+    }
+
+    pub fn has_back_reference(&self) -> bool {
+        !self.back_reference.is_empty()
+    }
+
+    pub fn has_args(&self) -> bool {
+        !self.args.is_empty()
+    }
+}

@@ -99,7 +99,7 @@ pub(crate) struct ScenarioCommands {
 }
 
 impl Iterator for ScenarioCommands {
-    type Item = Result<Box<dyn Command>>;
+    type Item = Result<Command>;
 
     fn next(&mut self) -> Option<Self::Item> {
 
