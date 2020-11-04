@@ -38,6 +38,10 @@ pub(crate) enum Error {
         path: String,
         source: io::Error,
     },
+    External {
+        command: String,
+        source: io::Error,
+    },
     Io {
         source: io::Error,
     },
@@ -79,6 +83,9 @@ impl fmt::Display for Error {
             },
             Self::NotWritable { context, path, source } => {
                 ("NotWritable", format!("{} path \"{}\" is not writable: {}", context, path, source))
+            },
+            Self::External { command, source } => {
+                ("External Command", format!("Failed to execute \"{}\": {}", command, source))
             },
             Self::Io { source } => {
                 ("I/O", source.to_string())
