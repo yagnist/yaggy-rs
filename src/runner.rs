@@ -9,7 +9,7 @@ use clap::ArgMatches;
 
 use log::{trace, debug, info, warn, error};
 
-use crate::{Scenario, Result, PathExt, Error};
+use crate::{Scenario, Result, YgPath, Error};
 use remote_params::RemoteParams;
 
 #[derive(Debug)]
@@ -90,8 +90,7 @@ impl Runner {
         let path = Path::new(self.filename.as_str())
             .canonicalize()
             .map_err(|e| Error::Canonicalization { path: Rc::clone(&self.filename), source: e})?;
-        let basedir = path.parent()
-            .ok_or(Error::Basedir { path: Rc::clone(&self.filename) })?;
+        let basedir = path.yg_basedir()?;
 
         let filename_str = path.to_str()
             .ok_or(Error::ScenarioFilename { path: Rc::clone(&self.filename) })?;
@@ -99,10 +98,8 @@ impl Runner {
         let logdir = basedir.join(self.logdir.as_str());
         let logdir = logdir
             .as_path()
-            .ensure_dir_exists()
-            .map_err(|e| Error::Logdir { path: logdir.to_string_lossy().to_string(), source: e })?
-            .ensure_is_writable()
-            .map_err(|e| Error::NotWritable { kind: "Logdir".to_string(), path: logdir.to_string_lossy().to_string(), source: e })?;
+            .yg_ensure_dir_exists("Logdir".to_owned())?
+            .yg_ensure_is_writable("Logdir".to_owned())?;
 
         let logfile = logdir.join(
             format!("{}.{}.{}.log",
@@ -115,10 +112,8 @@ impl Runner {
         let runtimedir = basedir.join(self.runtimedir.as_str());
         let _runtimedir = runtimedir
             .as_path()
-            .ensure_dir_exists()
-            .map_err(|e| Error::Runtimedir { path: runtimedir.to_string_lossy().to_string(), source: e })?
-            .ensure_is_writable()
-            .map_err(|e| Error::NotWritable { kind: "Runtimedir".to_string(), path: runtimedir.to_string_lossy().to_string(), source: e })?;
+            .yg_ensure_dir_exists("Runtimedir".to_owned())?
+            .yg_ensure_is_writable("Runtimedir".to_owned())?;
 
         info!("staring...");
         trace!("trace output...");

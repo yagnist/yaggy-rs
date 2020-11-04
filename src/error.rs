@@ -28,16 +28,13 @@ pub(crate) enum Error {
         path: Rc<String>,
         source: io::Error,
     },
-    Logdir {
-        path: String,
-        source: io::Error,
-    },
-    Runtimedir {
+    CreateDir {
+        context: String,
         path: String,
         source: io::Error,
     },
     NotWritable {
-        kind: String,
+        context: String,
         path: String,
         source: io::Error,
     },
@@ -77,14 +74,11 @@ impl fmt::Display for Error {
             Self::ScenarioRead { path, source } => {
                 ("Scenario read", format!("Error reading scenario from \"{}\": {}", path, source))
             },
-            Self::Logdir { path, source } => {
-                ("Logdir", format!("Unable to create logdir at \"{}\": {}", path, source))
+            Self::CreateDir { context, path, source } => {
+                (context.as_str(), format!("Unable to create directory at \"{}\": {}", path, source))
             },
-            Self::Runtimedir { path, source } => {
-                ("Runtimedir", format!("Unable to create runtimedir at \"{}\": {}", path, source))
-            },
-            Self::NotWritable { kind, path, source } => {
-                ("NotWritable", format!("{} path \"{}\" is not writable: {}", kind, path, source))
+            Self::NotWritable { context, path, source } => {
+                ("NotWritable", format!("{} path \"{}\" is not writable: {}", context, path, source))
             },
             Self::Io { source } => {
                 ("I/O", source.to_string())

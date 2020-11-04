@@ -2,13 +2,13 @@
 mod cli;
 mod command;
 mod error;
-mod path_ext;
+mod yg_path;
 mod runner;
 mod scenario;
 
 pub(crate) use command::{Command, CommandBuilder};
 pub(crate) use error::{Result, Error};
-pub(crate) use path_ext::PathExt;
+pub(crate) use yg_path::YgPath;
 pub(crate) use scenario::{Scenario, ParsedLine};
 
 use runner::Runner;

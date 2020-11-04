@@ -23,12 +23,12 @@ impl RemoteParams {
         }
     }
     fn with_hostname(mut self, hostname: Option<&str>) -> Self {
-        let hostname = hostname.unwrap_or("localhost").to_string();
+        let hostname = hostname.unwrap_or("localhost").to_owned();
         self.hostname = hostname;
         self
     }
     fn with_username(mut self, username: Option<&str>) -> Self {
-        self.username = username.and_then(|x| Some(String::from(x)));
+        self.username = username.map(|x| x.to_owned());
         self
     }
     fn with_port(mut self, port: Option<&str>) -> Self {
@@ -36,7 +36,7 @@ impl RemoteParams {
         self
     }
     fn with_syncroot(mut self, syncroot: Option<&str>) -> Self {
-        self.syncroot = syncroot.unwrap_or("~/.yaggy").to_string();
+        self.syncroot = syncroot.unwrap_or("~/.yaggy").to_owned();
         self
     }
 
