@@ -88,8 +88,7 @@ impl Runner {
     }
     pub(crate) fn run(&self) -> Result<()> {
         let path = Path::new(self.filename.as_str())
-            .canonicalize()
-            .map_err(|e| Error::Canonicalization { path: Rc::clone(&self.filename), source: e})?;
+            .yg_canonicalize()?;
         let basedir = path.yg_basedir()?;
 
         let filename_str = path.to_str()

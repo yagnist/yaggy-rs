@@ -1,7 +1,7 @@
 
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::rc::Rc;
 use std::process::Command;
 
@@ -9,12 +9,23 @@ use crate::{Result, Error};
 
 
 pub(crate) trait YgPath {
+    fn yg_basedir(&self) -> Result<&Path>;
+    fn yg_canonicalize(&self) -> Result<PathBuf>;
     fn yg_ensure_dir_exists(&self, context: String) -> Result<&Path>;
     fn yg_ensure_is_writable(&self, context: String) -> Result<&Path>;
-    fn yg_basedir(&self) -> Result<&Path>;
 }
 
 impl YgPath for Path {
+    fn yg_basedir(&self) -> Result<&Path> {
+        self.parent()
+            .ok_or(Error::Basedir { path: Rc::new(self.to_string_lossy().to_string()) })
+    }
+
+    fn yg_canonicalize(&self) -> Result<PathBuf> {
+        self.canonicalize()
+            .map_err(|e| Error::Canonicalization { path: Rc::new(self.to_string_lossy().to_string()), source: e})
+    }
+
     fn yg_ensure_dir_exists(&self, context: String) -> Result<&Path> {
         if !self.is_dir() {
             fs::create_dir(&self)
@@ -36,10 +47,5 @@ impl YgPath for Path {
             let e = io::Error::new(io::ErrorKind::PermissionDenied, "Permission denied");
             Err(Error::NotWritable { context: context, path: self.to_string_lossy().to_string(), source: e })
         }
-    }
-
-    fn yg_basedir(&self) -> Result<&Path> {
-        self.parent()
-            .ok_or(Error::Basedir { path: Rc::new(self.to_string_lossy().to_string()) })
     }
 }
