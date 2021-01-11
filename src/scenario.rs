@@ -4,35 +4,42 @@ mod line;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
-use std::rc::Rc;
 
-use crate::{Result, Error, Command, CommandBuilder};
+use crate::{YgResult, YgError, Command, CommandBuilder};
 pub(crate) use line::{ParsedLine, ParsedResult};
 
 
 #[derive(Debug, Default)]
 pub(crate) struct Scenario {
-    filename: Rc<String>,
+    filename: String,
 }
 
 
 impl Scenario {
-    pub(crate) fn new(filename: String) -> Self {
+    pub(crate) fn new(filename: &str) -> Self {
         Scenario {
-            filename: Rc::new(filename),
+            filename: filename.to_string(),
         }
     }
-    pub(crate) fn lines(&self) -> Result<ScenarioLines> {
-        let source = File::open(self.filename.as_str())
-            .map_err(|e| Error::ScenarioOpen { path: Rc::clone(&self.filename), source: e })?;
+    pub(crate) fn lines(&self) -> YgResult<ScenarioLines> {
+        let source = File::open(self.filename.clone())
+            .map_err(|e| {
+                YgError::io_error_with_source(
+                    format!(
+                        "Error opening scenario \"{}\"",
+                        self.filename
+                    ),
+                    e,
+                )
+            })?;
         let reader = BufReader::new(source);
-        let lines = ScenarioLines { filename: Rc::clone(&self.filename), reader: reader, line_num: 0};
+        let lines = ScenarioLines { filename: self.filename.clone(), reader: reader, line_num: 0};
 
         Ok(lines)
     }
-    pub(crate) fn commands(&self) -> Result<ScenarioCommands> {
+    pub(crate) fn commands(&self) -> YgResult<ScenarioCommands> {
         let lines = self.lines()?;
-        Ok(ScenarioCommands { lines , included: None})
+        Ok(ScenarioCommands { lines , included: Box::new(None)})
     }
 
 }
@@ -40,14 +47,14 @@ impl Scenario {
 
 #[derive(Debug)]
 pub(crate) struct ScenarioLines {
-    filename: Rc<String>,
+    filename: String,
     reader: BufReader<File>,
     line_num: u32,
 }
 
 
 impl Iterator for ScenarioLines {
-    type Item = Result<ParsedLine>;
+    type Item = YgResult<ParsedLine>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // NB. buffer for multiline commands
@@ -59,7 +66,14 @@ impl Iterator for ScenarioLines {
 
             match self.reader.read_line(&mut line) {
                 Ok(0) => if !buf.is_empty() {
-                    break Some(Err(Error::Syntax { path: Rc::clone(&self.filename), line: self.line_num, message: "Incomplete multiline command".to_string() }))
+                    break Some(Err(
+                            YgError::scenario_syntax_error(
+                                self.filename.clone(),
+                                self.line_num,
+                                "Incomplete multiline command".to_string(),
+                                None,  // FIXME
+                            )
+                        ))
                 } else {
                     break None
                 },
@@ -79,12 +93,27 @@ impl Iterator for ScenarioLines {
                             let parsed: ParsedResult = buf.parse();
                             match parsed {
                                 Ok(x) => break Some(Ok(x)),
-                                Err(x) => break Some(Err(Error::Syntax { path: Rc::clone(&self.filename), line: self.line_num, message: x.to_string() }))
+                                Err(x) => break Some(Err(
+                                    YgError::scenario_syntax_error(
+                                        self.filename.clone(),
+                                        self.line_num,
+                                        x.to_string(),
+                                        None,  // FIXME
+                                    )
+                                ))
                             }
                         }
                     }
                 },
-                Err(e) => break Some(Err(Error::ScenarioRead { path: Rc::clone(&self.filename), source: e }))
+                Err(e) => break Some(Err(
+                    YgError::io_error_with_source(
+                        format!(
+                            "Error reading scenario \"{}\"",
+                            self.filename
+                        ),
+                        e,
+                    )
+                ))
             }
         }
 
@@ -95,19 +124,19 @@ impl Iterator for ScenarioLines {
 #[derive(Debug)]
 pub(crate) struct ScenarioCommands {
     lines: ScenarioLines,
-    included: Option<Box<ScenarioCommands>>,
+    included: Box<Option<ScenarioCommands>>,
 }
 
 impl Iterator for ScenarioCommands {
-    type Item = Result<Command>;
+    type Item = YgResult<Command>;
 
     fn next(&mut self) -> Option<Self::Item> {
 
         // NB. commands from included scenario
-        if let Some(ref mut included) = self.included {
+        if let Some(ref mut included) = *self.included {
             match included.next() {
                 item @ Some(_) => return item,
-                None => self.included = None,
+                None => self.included = Box::new(None),
             }
         }
 
@@ -118,16 +147,21 @@ impl Iterator for ScenarioCommands {
             Some(Ok(parsed)) => {
                 let command = parsed.command.clone();
                 if command.as_str() == "INCLUDE" {
-                    match self.include(&parsed) {
+                    let included = self.include(&parsed);
+                    match included {
                         Ok(included) => {
-                            self.included = Some(Box::new(included));
+                            self.included = Box::new(Some(included));
                         },
                         Err(included) => {
                             return Some(Err(included));
                         }
                     }
                 }
-                let cmd = CommandBuilder::from_parsed_line(parsed, &self.lines.filename, self.lines.line_num);
+                let cmd = CommandBuilder::from_parsed_line(
+                    parsed,
+                    self.lines.filename.as_str(),
+                    self.lines.line_num
+                );
                 Some(cmd)
             },
             Some(Err(parsed)) => Some(Err(parsed)),
@@ -138,17 +172,31 @@ impl Iterator for ScenarioCommands {
 }
 
 impl ScenarioCommands {
-    fn include(&self, parsed: &ParsedLine) -> Result<ScenarioCommands> {
+    fn include(&self, parsed: &ParsedLine) -> YgResult<ScenarioCommands> {
         let to_include = parsed.args.clone();
         let path = Path::new(self.lines.filename.as_str())
             .parent()
-            .ok_or(Error::Command { path: Rc::clone(&self.lines.filename), line: self.lines.line_num, message: "INCLUDE error".to_string() })?;
+            .ok_or(
+                YgError::scenario_command_error(
+                    self.lines.filename.clone(),
+                    self.lines.line_num,
+                    "INCLUDE error".to_string(),
+                    None,  // FIXME
+                )
+            )?;
         let filename = path.join(to_include.as_str());
         let filename = filename
             .to_str()
-            .ok_or(Error::ScenarioFilename { path: Rc::new(to_include) })?;
+            .ok_or(
+                YgError::io_error(
+                    format!(
+                        "Invalid UTF-8 in \"{}\"",
+                        to_include
+                    ),
+                )
+            )?;
 
-        let scenario = Scenario::new(filename.to_string());
+        let scenario = Scenario::new(filename);
         scenario.commands()
     }
 }

@@ -3,13 +3,12 @@ mod logging;
 mod remote_params;
 
 use std::path::Path;
-use std::rc::Rc;
 
 use clap::ArgMatches;
 
 use log::{trace, debug, info, warn, error};
 
-use crate::{Scenario, Result, YgPath, Error};
+use crate::{Scenario, YgResult, YgPath, YgError};
 use remote_params::RemoteParams;
 
 #[derive(Debug)]
@@ -25,17 +24,17 @@ impl Default for Mode {
 }
 
 #[derive(Debug, Default)]
-pub(crate) struct Runner {
+pub(crate) struct Runner<'a> {
     verbosity: u8,
     mode: Mode,
-    filename: Rc<String>,
+    filename: &'a str,
     logdir: String,
     runtimedir: String,
     remote_params: RemoteParams,
 }
 
 // private methods
-impl Runner {
+impl<'a> Runner<'a> {
     fn new() -> Self {
         Runner {
             ..Default::default()
@@ -49,8 +48,8 @@ impl Runner {
         self.mode = mode;
         self
     }
-    fn with_filename(mut self, filename: String) -> Self {
-        self.filename = Rc::new(filename);
+    fn with_filename(mut self, filename: &'a str) -> Self {
+        self.filename = filename;
         self
     }
     fn with_logdir(mut self, logdir: String) -> Self {
@@ -68,11 +67,11 @@ impl Runner {
 }
 
 // public methods
-impl Runner {
-    pub(crate) fn from_args(args: &ArgMatches) -> Self {
+impl<'a> Runner<'a> {
+    pub(crate) fn from_args(args: &'a ArgMatches) -> Self {
         let verbosity = args.occurrences_of("verbose") as u8;
         let mode = if args.is_present("dry_run") { Mode::DryRun } else { Mode::LiveRun };
-        let filename = args.value_of("filename").unwrap_or("scenario.yg").to_string();
+        let filename = args.value_of("filename").unwrap_or("scenario.yg");
         let logdir = args.value_of("logdir").unwrap_or("logs").to_string();
         let runtimedir = args.value_of("runtimedir").unwrap_or(".rt").to_string();
 
@@ -86,13 +85,20 @@ impl Runner {
             .with_runtimedir(runtimedir)
             .with_remote_params(rparams)
     }
-    pub(crate) fn run(&self) -> Result<()> {
-        let path = Path::new(self.filename.as_str())
+    pub(crate) fn run(&self) -> YgResult<()> {
+        let path = Path::new(self.filename)
             .yg_canonicalize()?;
         let basedir = path.yg_basedir()?;
 
         let filename_str = path.to_str()
-            .ok_or(Error::ScenarioFilename { path: Rc::clone(&self.filename) })?;
+            .ok_or(
+                YgError::io_error(
+                    format!(
+                        "Invalid UTF-8 in scenario filename \"{}\"",
+                        self.filename
+                    ),
+                )
+            )?;
 
         let logdir = basedir.join(self.logdir.as_str());
         let logdir = logdir
@@ -120,7 +126,7 @@ impl Runner {
         warn!("here goes some warning...");
         error!("ooops, something bad happened...");
 
-        let scenario = Scenario::new(filename_str.to_string());
+        let scenario = Scenario::new(filename_str);
 
         for cmd in scenario.commands()? {
             let cmd = cmd?;

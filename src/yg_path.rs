@@ -1,51 +1,84 @@
-
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 use std::process::Command;
 
-use crate::{Result, Error};
-
+use crate::{YgError, YgResult};
 
 pub(crate) trait YgPath {
-    fn yg_basedir(&self) -> Result<&Path>;
-    fn yg_canonicalize(&self) -> Result<PathBuf>;
-    fn yg_ensure_dir_exists(&self, context: String) -> Result<&Path>;
-    fn yg_ensure_is_writable(&self, context: String) -> Result<&Path>;
+    fn yg_basedir(&self) -> YgResult<&Path>;
+    fn yg_canonicalize(&self) -> YgResult<PathBuf>;
+    fn yg_ensure_dir_exists(&self, context: String) -> YgResult<&Path>;
+    fn yg_ensure_is_writable(&self, context: String) -> YgResult<&Path>;
 }
 
 impl YgPath for Path {
-    fn yg_basedir(&self) -> Result<&Path> {
-        self.parent()
-            .ok_or(Error::Basedir { path: Rc::new(self.to_string_lossy().to_string()) })
+    fn yg_basedir(&self) -> YgResult<&Path> {
+        self.parent().ok_or_else(|| {
+            let msg = format!(
+                "Unable to get base directory for \"{}\"",
+                self.to_string_lossy().to_string()
+            );
+            YgError::io_error(msg)
+        })
     }
 
-    fn yg_canonicalize(&self) -> Result<PathBuf> {
-        self.canonicalize()
-            .map_err(|e| Error::Canonicalization { path: Rc::new(self.to_string_lossy().to_string()), source: e})
+    fn yg_canonicalize(&self) -> YgResult<PathBuf> {
+        self.canonicalize().map_err(|e| {
+            YgError::io_error_with_source(
+                format!(
+                    "Unable to get canonical path for \"{}\"",
+                    self.to_string_lossy().to_string()
+                ),
+                e,
+            )
+        })
     }
 
-    fn yg_ensure_dir_exists(&self, context: String) -> Result<&Path> {
+    fn yg_ensure_dir_exists(&self, context: String) -> YgResult<&Path> {
         if !self.is_dir() {
-            fs::create_dir(&self)
-                .map_err(|e| Error::CreateDir { context: context, path: self.to_string_lossy().to_string(), source: e })?;
+            fs::create_dir(&self).map_err(|e| {
+                YgError::io_error_with_source(
+                    format!(
+                        "[{}] Unable to create directory at \"{}\"",
+                        context,
+                        self.to_string_lossy().to_string()
+                    ),
+                    e,
+                )
+            })?;
         }
         Ok(self)
     }
 
-    fn yg_ensure_is_writable(&self, context: String) -> Result<&Path> {
+    fn yg_ensure_is_writable(&self, context: String) -> YgResult<&Path> {
         let res = Command::new("test")
             .arg("-w")
             .arg(self.as_os_str())
             .status()
-            .map_err(|e| Error::External { command: format!("test -w {}", self.to_string_lossy().to_string()), source: e })?;
+            .map_err(|e| {
+                YgError::io_error_with_source(
+                    format!(
+                        "[{}] Failed to execute \"test -w {}\"",
+                        context,
+                        self.to_string_lossy().to_string()
+                    ),
+                    e,
+                )
+            })?;
 
         if res.success() {
             Ok(self)
         } else {
             let e = io::Error::new(io::ErrorKind::PermissionDenied, "Permission denied");
-            Err(Error::NotWritable { context: context, path: self.to_string_lossy().to_string(), source: e })
+            Err(YgError::io_error_with_source(
+                format!(
+                    "[{}] Path \"{}\" is not writable",
+                    context,
+                    self.to_string_lossy().to_string()
+                ),
+                e,
+            ))
         }
     }
 }

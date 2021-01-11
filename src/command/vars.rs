@@ -1,14 +1,13 @@
 
 use std::path::Path;
-use std::rc::Rc;
 
-use crate::{Error, Result, YgPath};
+use crate::{YgError, YgResult, YgPath};
 use super::{Command, validators};
 
 
-fn validate_args(command: &Command) -> Result<()> {
+fn validate_args(command: &Command) -> YgResult<()> {
     let args = &command.parsed.args;
-    let cmd_filename = Path::new(command.filename.as_str());
+    let cmd_filename = Path::new(&command.filename);
     let basedir = cmd_filename.yg_basedir()?;
     let filename = basedir.join(args).yg_canonicalize();
 
@@ -16,23 +15,25 @@ fn validate_args(command: &Command) -> Result<()> {
         Ok(_) => Ok(()),
         Err(_) => {
             let words = shell_words::split(args)
-                .map_err(|_| Error::Syntax {
-                    path: Rc::clone(&command.filename),
-                    line: command.line_num,
-                    message: format!("Invalid syntax in shell command: \"{}\"", args)
-                })?;
+                .map_err(|_| YgError::scenario_syntax_error(
+                    command.filename.clone(),
+                    command.line_num,
+                    format!("Invalid syntax in shell command: \"{}\"", args),
+                    None,  // FIXME
+                ))?;
             let _cmd = which::which(&words[0])
-                .map_err(|e| Error::Syntax {
-                    path: Rc::clone(&command.filename),
-                    line: command.line_num,
-                    message: format!("{} for shell command: \"{}\"", e.to_string(), args)
-                })?;
+                .map_err(|e| YgError::scenario_syntax_error(
+                    command.filename.clone(),
+                    command.line_num,
+                    format!("{} for shell command: \"{}\"", e.to_string(), args),
+                    None,  // FIXME
+                ))?;
             Ok(())
         }
     }
 }
 
-pub(crate) fn validate(command: &Command) -> Result<()> {
+pub(crate) fn validate(command: &Command) -> YgResult<()> {
     validators::has_no_reference(&command)?;
     validators::has_no_back_reference(&command)?;
     validators::has_args(&command)?;

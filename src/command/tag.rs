@@ -1,9 +1,9 @@
 
-use crate::Result;
+use crate::YgResult;
 use super::{Command, validators};
 
 
-pub(crate) fn validate_tag(command: &Command) -> Result<()> {
+pub(crate) fn validate_tag(command: &Command) -> YgResult<()> {
     validators::has_no_reference(&command)?;
     validators::has_no_back_reference(&command)?;
     validators::has_args(&command)?;
@@ -14,7 +14,7 @@ pub(crate) fn validate_tag(command: &Command) -> Result<()> {
     Ok(())
 }
 
-pub(crate) fn validate_untag(command: &Command) -> Result<()> {
+pub(crate) fn validate_untag(command: &Command) -> YgResult<()> {
     validators::has_no_reference(&command)?;
     validators::has_no_back_reference(&command)?;
     validators::has_args(&command)?;

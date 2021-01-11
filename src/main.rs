@@ -1,13 +1,13 @@
 
 mod cli;
 mod command;
-mod error;
+mod yg_error;
 mod yg_path;
 mod runner;
 mod scenario;
 
 pub(crate) use command::{Command, CommandBuilder};
-pub(crate) use error::{Result, Error};
+pub(crate) use yg_error::{YgResult, YgError};
 pub(crate) use yg_path::YgPath;
 pub(crate) use scenario::{Scenario, ParsedLine};
 

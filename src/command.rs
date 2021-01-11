@@ -11,11 +11,8 @@ mod vars;
 mod validators;
 
 use std::fmt;
-use std::rc::Rc;
 
-use crate::Error;
-use crate::Result;
-use crate::ParsedLine;
+use crate::{ParsedLine, YgError, YgResult};
 
 
 #[derive(Debug)]
@@ -45,7 +42,8 @@ pub enum Cmd {
 
 #[derive(Debug)]
 pub(crate) struct Command {
-    filename: Rc<String>,
+    // filename: Rc<String>,
+    filename: String,
     line_num: u32,
     parsed: ParsedLine,
     cmd: Cmd,
@@ -63,7 +61,7 @@ impl Command {
     fn display(&self) -> String {
         format!("{}", self.parsed)
     }
-    pub(crate) fn validate(&self) -> Result<()> {
+    pub(crate) fn validate(&self) -> YgResult<()> {
         use Cmd::*;
 
         match self.cmd {
@@ -88,7 +86,7 @@ pub(crate) struct CommandBuilder;
 
 impl CommandBuilder {
 
-    pub fn from_parsed_line(parsed: ParsedLine, filename: &Rc<String>, line_num: u32) -> Result<Command> {
+    pub fn from_parsed_line(parsed: ParsedLine, filename: &str, line_num: u32) -> YgResult<Command> {
 
         use Cmd::*;
 
@@ -114,11 +112,17 @@ impl CommandBuilder {
             "VARS" => Vars,
             "SECRETS" => Secrets,
             x => {
-                return Err(Error::Command{ path: Rc::clone(filename), line: line_num, message: format!("unknown command: {}", x) });
+                let message = format!("Unknown scenario command: \"{}\"", x.clone());
+                return Err(YgError::scenario_syntax_error(
+                        filename.to_string(),
+                        line_num,
+                        message,
+                        None,  // FIXME
+                ));
             },
         };
 
-        Ok(Command { filename: Rc::clone(filename), line_num: line_num, parsed: parsed, cmd: cmd })
+        Ok(Command { filename: filename.to_string(), line_num: line_num, parsed: parsed, cmd: cmd })
     }
 
 }
