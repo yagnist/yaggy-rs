@@ -1,4 +1,3 @@
-
 use clap::ArgMatches;
 
 #[derive(Debug, Default)]
@@ -18,9 +17,7 @@ impl RemoteParams {
             .with_syncroot(args.value_of("syncroot"))
     }
     fn new() -> Self {
-        RemoteParams {
-            ..Default::default()
-        }
+        RemoteParams { ..Default::default() }
     }
     fn with_hostname(mut self, hostname: Option<&str>) -> Self {
         let hostname = hostname.unwrap_or("localhost").to_owned();
@@ -39,5 +36,4 @@ impl RemoteParams {
         self.syncroot = syncroot.unwrap_or("~/.yaggy").to_owned();
         self
     }
-
 }

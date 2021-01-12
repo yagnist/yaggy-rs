@@ -1,7 +1,5 @@
-
+use super::{validators, Command};
 use crate::YgResult;
-use super::{Command, validators};
-
 
 pub(crate) fn validate_run(command: &Command) -> YgResult<()> {
     validators::has_no_back_reference(&command)?;

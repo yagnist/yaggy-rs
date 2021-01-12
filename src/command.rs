@@ -1,4 +1,3 @@
-
 mod connect;
 mod echo;
 mod fetch;
@@ -13,7 +12,6 @@ mod validators;
 use std::fmt;
 
 use crate::{ParsedLine, YgError, YgResult};
-
 
 #[derive(Debug)]
 pub enum Cmd {
@@ -39,7 +37,6 @@ pub enum Cmd {
     Secrets,
 }
 
-
 #[derive(Debug)]
 pub(crate) struct Command {
     // filename: Rc<String>,
@@ -48,7 +45,6 @@ pub(crate) struct Command {
     parsed: ParsedLine,
     cmd: Cmd,
 }
-
 
 impl fmt::Display for Command {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -75,19 +71,24 @@ impl Command {
             Include => include::validate(&self),
             Tag => tag::validate_tag(&self),
             Untag => tag::validate_untag(&self),
-            Run | RunExclamation | LRun | LRunExclamation => run::validate_run(&self),
-            Succeed | LSucceed | Failed | LFailed => run::validate_conditional(&self),
+            Run | RunExclamation | LRun | LRunExclamation => {
+                run::validate_run(&self)
+            }
+            Succeed | LSucceed | Failed | LFailed => {
+                run::validate_conditional(&self)
+            }
         }
     }
 }
 
-
 pub(crate) struct CommandBuilder;
 
 impl CommandBuilder {
-
-    pub fn from_parsed_line(parsed: ParsedLine, filename: &str, line_num: u32) -> YgResult<Command> {
-
+    pub fn from_parsed_line(
+        parsed: ParsedLine,
+        filename: &str,
+        line_num: u32,
+    ) -> YgResult<Command> {
         use Cmd::*;
 
         let cmd = match parsed.command.as_str() {
@@ -112,17 +113,22 @@ impl CommandBuilder {
             "VARS" => Vars,
             "SECRETS" => Secrets,
             x => {
-                let message = format!("Unknown scenario command: \"{}\"", x.clone());
+                let message =
+                    format!("Unknown scenario command: \"{}\"", x.clone());
                 return Err(YgError::scenario_syntax_error(
-                        filename.to_string(),
-                        line_num,
-                        message,
-                        None,  // FIXME
+                    filename.to_string(),
+                    line_num,
+                    message,
+                    None, // FIXME
                 ));
-            },
+            }
         };
 
-        Ok(Command { filename: filename.to_string(), line_num: line_num, parsed: parsed, cmd: cmd })
+        Ok(Command {
+            filename: filename.to_string(),
+            line_num: line_num,
+            parsed: parsed,
+            cmd: cmd,
+        })
     }
-
 }

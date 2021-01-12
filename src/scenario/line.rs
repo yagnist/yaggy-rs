@@ -1,4 +1,3 @@
-
 use std::error;
 use std::fmt;
 use std::str::FromStr;
@@ -59,11 +58,11 @@ impl FromStr for ParsedLine {
                     Some('@') => {
                         reference.push('@');
                         Reference
-                    },
+                    }
                     Some(c) => {
                         command.push(c);
                         Command
-                    },
+                    }
                 },
                 Reference => match c {
                     None => break,
@@ -71,7 +70,7 @@ impl FromStr for ParsedLine {
                     Some(c) => {
                         reference.push(c);
                         Reference
-                    },
+                    }
                 },
                 AfterReference => match c {
                     None => break,
@@ -79,7 +78,7 @@ impl FromStr for ParsedLine {
                     Some(c) => {
                         command.push(c);
                         Command
-                    },
+                    }
                 },
                 Command => match c {
                     None => break,
@@ -87,7 +86,7 @@ impl FromStr for ParsedLine {
                     Some(c) => {
                         command.push(c);
                         Command
-                    },
+                    }
                 },
                 AfterCommand => match c {
                     None => break,
@@ -95,11 +94,11 @@ impl FromStr for ParsedLine {
                     Some('@') => {
                         back_reference.push('@');
                         BackReference
-                    },
+                    }
                     Some(c) => {
                         args.push(c);
                         Args
-                    },
+                    }
                 },
                 BackReference => match c {
                     None => break,
@@ -107,7 +106,7 @@ impl FromStr for ParsedLine {
                     Some(c) => {
                         back_reference.push(c);
                         BackReference
-                    },
+                    }
                 },
                 AfterBackReference => match c {
                     None => break,
@@ -115,14 +114,14 @@ impl FromStr for ParsedLine {
                     Some(c) => {
                         args.push(c);
                         Args
-                    },
+                    }
                 },
                 Args => match c {
                     None => break,
                     Some(c) => {
                         args.push(c);
                         Args
-                    },
+                    }
                 },
             }
         }
@@ -132,13 +131,16 @@ impl FromStr for ParsedLine {
         } else {
             Ok(ParsedLine { reference, command, back_reference, args })
         }
-
     }
 }
 
 impl fmt::Display for ParsedLine {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{} {} {} {}", self.reference, self.command, self.back_reference, self.args)
+        write!(
+            f,
+            "{} {} {} {}",
+            self.reference, self.command, self.back_reference, self.args
+        )
     }
 }
 

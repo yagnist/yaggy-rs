@@ -1,4 +1,3 @@
-
 mod logging;
 mod remote_params;
 
@@ -6,9 +5,9 @@ use std::path::Path;
 
 use clap::ArgMatches;
 
-use log::{trace, debug, info, warn, error};
+use log::{debug, error, info, trace, warn};
 
-use crate::{Scenario, YgResult, YgPath, YgError};
+use crate::{Scenario, YgError, YgPath, YgResult};
 use remote_params::RemoteParams;
 
 #[derive(Debug)]
@@ -36,9 +35,7 @@ pub(crate) struct Runner<'a> {
 // private methods
 impl<'a> Runner<'a> {
     fn new() -> Self {
-        Runner {
-            ..Default::default()
-        }
+        Runner { ..Default::default() }
     }
     fn with_verbosity(mut self, verbosity: u8) -> Self {
         self.verbosity = verbosity;
@@ -70,10 +67,15 @@ impl<'a> Runner<'a> {
 impl<'a> Runner<'a> {
     pub(crate) fn from_args(args: &'a ArgMatches) -> Self {
         let verbosity = args.occurrences_of("verbose") as u8;
-        let mode = if args.is_present("dry_run") { Mode::DryRun } else { Mode::LiveRun };
+        let mode = if args.is_present("dry_run") {
+            Mode::DryRun
+        } else {
+            Mode::LiveRun
+        };
         let filename = args.value_of("filename").unwrap_or("scenario.yg");
         let logdir = args.value_of("logdir").unwrap_or("logs").to_string();
-        let runtimedir = args.value_of("runtimedir").unwrap_or(".rt").to_string();
+        let runtimedir =
+            args.value_of("runtimedir").unwrap_or(".rt").to_string();
 
         let rparams = RemoteParams::from_args(args);
 
@@ -86,19 +88,13 @@ impl<'a> Runner<'a> {
             .with_remote_params(rparams)
     }
     pub(crate) fn run(&self) -> YgResult<()> {
-        let path = Path::new(self.filename)
-            .yg_canonicalize()?;
+        let path = Path::new(self.filename).yg_canonicalize()?;
         let basedir = path.yg_basedir()?;
 
-        let filename_str = path.to_str()
-            .ok_or(
-                YgError::io_error(
-                    format!(
-                        "Invalid UTF-8 in scenario filename \"{}\"",
-                        self.filename
-                    ),
-                )
-            )?;
+        let filename_str = path.to_str().ok_or(YgError::io_error(format!(
+            "Invalid UTF-8 in scenario filename \"{}\"",
+            self.filename
+        )))?;
 
         let logdir = basedir.join(self.logdir.as_str());
         let logdir = logdir
@@ -106,12 +102,12 @@ impl<'a> Runner<'a> {
             .yg_ensure_dir_exists("Logdir".to_owned())?
             .yg_ensure_is_writable("Logdir".to_owned())?;
 
-        let logfile = logdir.join(
-            format!("{}.{}.{}.log",
-                path.file_stem().unwrap().to_str().unwrap_or("undef"),
-                self.remote_params.hostname,
-                chrono::Local::now().format("%Y%m%d%H%M%S")
-            ));
+        let logfile = logdir.join(format!(
+            "{}.{}.{}.log",
+            path.file_stem().unwrap().to_str().unwrap_or("undef"),
+            self.remote_params.hostname,
+            chrono::Local::now().format("%Y%m%d%H%M%S")
+        ));
         logging::setup_logging(self.verbosity, logfile.as_path())?;
 
         let runtimedir = basedir.join(self.runtimedir.as_str());

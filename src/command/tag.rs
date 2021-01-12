@@ -1,7 +1,5 @@
-
+use super::{validators, Command};
 use crate::YgResult;
-use super::{Command, validators};
-
 
 pub(crate) fn validate_tag(command: &Command) -> YgResult<()> {
     validators::has_no_reference(&command)?;

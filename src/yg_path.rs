@@ -70,7 +70,10 @@ impl YgPath for Path {
         if res.success() {
             Ok(self)
         } else {
-            let e = io::Error::new(io::ErrorKind::PermissionDenied, "Permission denied");
+            let e = io::Error::new(
+                io::ErrorKind::PermissionDenied,
+                "Permission denied",
+            );
             Err(YgError::io_error_with_source(
                 format!(
                     "[{}] Path \"{}\" is not writable",

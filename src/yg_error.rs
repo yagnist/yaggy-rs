@@ -79,34 +79,19 @@ impl YgError {
         }
     }
     pub(crate) fn io_error(message: String) -> YgError {
-        YgError {
-            repr: Repr::Io {
-                message: message,
-                source: None,
-            },
-        }
+        YgError { repr: Repr::Io { message: message, source: None } }
     }
-    pub(crate) fn io_error_with_source(message: String, source: io::Error) -> YgError {
-        YgError {
-            repr: Repr::Io {
-                message,
-                source: Some(source),
-            },
-        }
+    pub(crate) fn io_error_with_source(
+        message: String,
+        source: io::Error,
+    ) -> YgError {
+        YgError { repr: Repr::Io { message, source: Some(source) } }
     }
     fn from_fern(source: fern::InitError) -> YgError {
-        YgError {
-            repr: Repr::Logging {
-                source: Box::new(source),
-            },
-        }
+        YgError { repr: Repr::Logging { source: Box::new(source) } }
     }
     fn from_log(source: log::SetLoggerError) -> YgError {
-        YgError {
-            repr: Repr::Logging {
-                source: Box::new(source),
-            },
-        }
+        YgError { repr: Repr::Logging { source: Box::new(source) } }
     }
 }
 
@@ -121,16 +106,18 @@ impl fmt::Display for YgError {
                 source: ref _source,
             } => (
                 kind.to_string(),
-                format!("{}, file: \"{}\", line: {}", message, filename, line_num),
+                format!(
+                    "{}, file: \"{}\", line: {}",
+                    message, filename, line_num
+                ),
             ),
-            Repr::Io {
-                message,
-                ref source,
-            } => match source {
+            Repr::Io { message, ref source } => match source {
                 Some(err) => (message.clone(), err.to_string()),
                 None => ("I/O error".to_string(), message.to_string()),
             },
-            Repr::Logging { ref source } => ("Logging init error".to_string(), source.to_string()),
+            Repr::Logging { ref source } => {
+                ("Logging init error".to_string(), source.to_string())
+            }
         };
 
         write!(fmt, "{}: {}", prefix, msg)

@@ -1,7 +1,9 @@
-
 use std::path::Path;
 
-use clap::{crate_description, crate_version, App, Arg, ArgMatches, AppSettings, SubCommand};
+use clap::{
+    crate_description, crate_version, App, AppSettings, Arg, ArgMatches,
+    SubCommand,
+};
 
 fn is_int(v: String) -> Result<(), String> {
     match v.parse::<u16>() {
