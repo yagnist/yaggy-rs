@@ -122,16 +122,37 @@ impl<'a> Runner<'a> {
         warn!("here goes some warning...");
         error!("ooops, something bad happened...");
 
-        let scenario = Scenario::new(filename_str);
-
-        for cmd in scenario.commands()? {
-            let cmd = cmd?;
-
-            cmd.validate()?;
-            // print!("{:?}", cmd);
-            info!("{}", cmd);
-        }
-
-        Ok(())
+        run_included(filename_str)
     }
+}
+
+fn run_included(filename: &str) -> YgResult<()> {
+    let scenario = Scenario::new(filename);
+
+    for cmd in scenario.commands()? {
+        let cmd = cmd?;
+
+        cmd.validate()?;
+        // print!("{:?}", cmd);
+        info!("{}", cmd);
+
+        if cmd.is_include() {
+            let path = Path::new(filename).parent().ok_or(
+                YgError::scenario_command_error(
+                    cmd.filename.clone(),
+                    cmd.line_num,
+                    "INCLUDE error".to_string(),
+                    None, // FIXME
+                ),
+            )?;
+            let to_include = path.join(cmd.parsed.args.as_str());
+            let to_include = to_include.to_str().ok_or(YgError::io_error(format!(
+                "Invalid UTF-8 in \"{}\"",
+                cmd.parsed.args
+            )))?;
+            run_included(to_include)?;
+        }
+    }
+
+    Ok(())
 }

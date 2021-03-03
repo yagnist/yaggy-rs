@@ -13,7 +13,7 @@ use std::fmt;
 
 use crate::{ParsedLine, YgError, YgResult};
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq)]
 pub enum Cmd {
     Connect,
     Reconnect,
@@ -40,9 +40,9 @@ pub enum Cmd {
 #[derive(Debug)]
 pub(crate) struct Command {
     // filename: Rc<String>,
-    filename: String,
-    line_num: u32,
-    parsed: ParsedLine,
+    pub filename: String,
+    pub line_num: u32,
+    pub parsed: ParsedLine,
     cmd: Cmd,
 }
 
@@ -78,6 +78,9 @@ impl Command {
                 run::validate_conditional(&self)
             }
         }
+    }
+    pub(crate) fn is_include(&self) -> bool {
+        self.cmd == Cmd::Include
     }
 }
 
