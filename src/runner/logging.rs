@@ -1,9 +1,10 @@
 use std::io;
 use std::path::Path;
 
-use crate::YgResult;
-
-pub(crate) fn setup_logging(verbosity: u8, logfile: &Path) -> YgResult<()> {
+pub(crate) fn setup_logging(
+    verbosity: u8,
+    logfile: &Path,
+) -> Result<(), fern::InitError> {
     let level = match verbosity {
         0 => log::LevelFilter::Info,
         1 => log::LevelFilter::Debug,

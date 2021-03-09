@@ -5,9 +5,12 @@ mod scenario;
 mod yg_error;
 mod yg_path;
 
-pub(crate) use command::{Command, CommandBuilder};
+pub(crate) use command::{validate_command, Command, CommandBuilder};
 pub(crate) use scenario::{ParsedLine, Scenario};
-pub(crate) use yg_error::{YgError, YgResult};
+pub(crate) use yg_error::{
+    YgError, YgIoError, YgIoResult, YgResult, YgScenarioError,
+    YgScenarioResult,
+};
 pub(crate) use yg_path::YgPath;
 
 use runner::Runner;

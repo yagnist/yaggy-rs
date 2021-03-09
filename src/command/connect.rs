@@ -1,7 +1,7 @@
 use super::{validators, Command};
-use crate::YgResult;
+use crate::YgScenarioResult;
 
-pub(crate) fn validate(command: &Command) -> YgResult<()> {
+pub(crate) fn validate(command: &Command) -> YgScenarioResult<()> {
     validators::has_no_reference(&command)?;
     validators::has_no_back_reference(&command)?;
     validators::has_no_args(&command)?;
@@ -9,7 +9,7 @@ pub(crate) fn validate(command: &Command) -> YgResult<()> {
     Ok(())
 }
 
-pub(crate) fn validate_reconnect(command: &Command) -> YgResult<()> {
+pub(crate) fn validate_reconnect(command: &Command) -> YgScenarioResult<()> {
     validators::has_no_reference(&command)?;
     validators::has_no_back_reference(&command)?;
 
@@ -19,7 +19,9 @@ pub(crate) fn validate_reconnect(command: &Command) -> YgResult<()> {
     Ok(())
 }
 
-pub(crate) fn validate_reconnect_if(command: &Command) -> YgResult<()> {
+pub(crate) fn validate_reconnect_if(
+    command: &Command,
+) -> YgScenarioResult<()> {
     validators::has_no_reference(&command)?;
 
     // TODO

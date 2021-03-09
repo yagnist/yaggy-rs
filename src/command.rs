@@ -10,10 +10,11 @@ mod vars;
 mod validators;
 
 use std::fmt;
+use std::path::Path;
 
-use crate::{ParsedLine, YgError, YgResult};
+use crate::{ParsedLine, YgScenarioError, YgScenarioResult};
 
-#[derive(Debug,PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Cmd {
     Connect,
     Reconnect,
@@ -57,28 +58,6 @@ impl Command {
     fn display(&self) -> String {
         format!("{}", self.parsed)
     }
-    pub(crate) fn validate(&self) -> YgResult<()> {
-        use Cmd::*;
-
-        match self.cmd {
-            Connect | Disconnect => connect::validate(&self),
-            Reconnect => connect::validate_reconnect(&self),
-            ReconnectIf => connect::validate_reconnect_if(&self),
-            Vars | Secrets => vars::validate(&self),
-            Sync => sync::validate(&self),
-            Echo => echo::validate(&self),
-            Fetch => fetch::validate(&self),
-            Include => include::validate(&self),
-            Tag => tag::validate_tag(&self),
-            Untag => tag::validate_untag(&self),
-            Run | RunExclamation | LRun | LRunExclamation => {
-                run::validate_run(&self)
-            }
-            Succeed | LSucceed | Failed | LFailed => {
-                run::validate_conditional(&self)
-            }
-        }
-    }
     pub(crate) fn is_include(&self) -> bool {
         self.cmd == Cmd::Include
     }
@@ -91,7 +70,7 @@ impl CommandBuilder {
         parsed: ParsedLine,
         filename: &str,
         line_num: u32,
-    ) -> YgResult<Command> {
+    ) -> YgScenarioResult<Command> {
         use Cmd::*;
 
         let cmd = match parsed.command.as_str() {
@@ -118,12 +97,7 @@ impl CommandBuilder {
             x => {
                 let message =
                     format!("Unknown scenario command: \"{}\"", x.clone());
-                return Err(YgError::scenario_syntax_error(
-                    filename.to_string(),
-                    line_num,
-                    message,
-                    None, // FIXME
-                ));
+                return Err(YgScenarioError::SyntaxError(line_num, message));
             }
         };
 
@@ -133,5 +107,31 @@ impl CommandBuilder {
             parsed: parsed,
             cmd: cmd,
         })
+    }
+}
+
+pub(crate) fn validate_command(
+    basedir: &Path,
+    command: &Command,
+) -> YgScenarioResult<()> {
+    use Cmd::*;
+
+    match command.cmd {
+        Connect | Disconnect => connect::validate(&command),
+        Reconnect => connect::validate_reconnect(&command),
+        ReconnectIf => connect::validate_reconnect_if(&command),
+        Vars | Secrets => vars::validate(&basedir, &command),
+        Sync => sync::validate(&command),
+        Echo => echo::validate(&command),
+        Fetch => fetch::validate(&command),
+        Include => include::validate(&command),
+        Tag => tag::validate_tag(&command),
+        Untag => tag::validate_untag(&command),
+        Run | RunExclamation | LRun | LRunExclamation => {
+            run::validate_run(&command)
+        }
+        Succeed | LSucceed | Failed | LFailed => {
+            run::validate_conditional(&command)
+        }
     }
 }

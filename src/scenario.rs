@@ -3,7 +3,7 @@ mod line;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 
-use crate::{Command, CommandBuilder, YgError, YgResult};
+use crate::{Command, CommandBuilder, YgScenarioError, YgScenarioResult};
 pub(crate) use line::{ParsedLine, ParsedResult};
 
 #[derive(Debug, Default)]
@@ -15,13 +15,9 @@ impl Scenario {
     pub(crate) fn new(filename: &str) -> Self {
         Scenario { filename: filename.to_string() }
     }
-    pub(crate) fn commands(&self) -> YgResult<ScenarioCommands> {
-        let source = File::open(self.filename.clone()).map_err(|e| {
-            YgError::io_error_with_source(
-                format!("Error opening scenario \"{}\"", self.filename),
-                e,
-            )
-        })?;
+    pub(crate) fn commands(&self) -> YgScenarioResult<ScenarioCommands> {
+        let source = File::open(self.filename.clone())
+            .map_err(|err| YgScenarioError::OpenError(err))?;
         let reader = BufReader::new(source);
         let commands = ScenarioCommands {
             filename: self.filename.clone(),
@@ -41,7 +37,7 @@ pub(crate) struct ScenarioCommands {
 }
 
 impl Iterator for ScenarioCommands {
-    type Item = YgResult<Command>;
+    type Item = YgScenarioResult<Command>;
 
     fn next(&mut self) -> Option<Self::Item> {
         // NB. buffer for multiline commands
@@ -54,11 +50,9 @@ impl Iterator for ScenarioCommands {
             match self.reader.read_line(&mut line) {
                 Ok(0) => {
                     if !buf.is_empty() {
-                        break Some(Err(YgError::scenario_syntax_error(
-                            self.filename.clone(),
+                        break Some(Err(YgScenarioError::SyntaxError(
                             self.line_num,
                             "Incomplete multiline command".to_string(),
-                            None, // FIXME
                         )));
                     } else {
                         break None;
@@ -88,11 +82,9 @@ impl Iterator for ScenarioCommands {
                                 }
                                 Err(x) => {
                                     break Some(Err(
-                                        YgError::scenario_syntax_error(
-                                            self.filename.clone(),
+                                        YgScenarioError::SyntaxError(
                                             self.line_num,
                                             x.to_string(),
-                                            None, // FIXME
                                         ),
                                     ));
                                 }
@@ -100,15 +92,7 @@ impl Iterator for ScenarioCommands {
                         }
                     }
                 }
-                Err(e) => {
-                    break Some(Err(YgError::io_error_with_source(
-                        format!(
-                            "Error reading scenario \"{}\"",
-                            self.filename
-                        ),
-                        e,
-                    )))
-                }
+                Err(err) => break Some(Err(YgScenarioError::ReadError(err))),
             }
         }
     }
