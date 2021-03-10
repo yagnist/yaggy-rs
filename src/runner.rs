@@ -129,18 +129,16 @@ impl<'a> Runner<'a> {
 }
 
 fn run_included(filename: &str) -> YgResult<()> {
+    let scenario_err = |err| YgError::Scenario(filename.to_string(), err);
+
     let scenario = Scenario::new(filename);
-    let commands = scenario
-        .commands()
-        .map_err(|err| YgError::Scenario(filename.to_string(), err))?;
+    let commands = scenario.commands().map_err(scenario_err)?;
     let basedir = Path::new(filename).yg_basedir()?;
 
     for cmd in commands {
-        let cmd =
-            cmd.map_err(|err| YgError::Scenario(filename.to_string(), err))?;
+        let cmd = cmd.map_err(scenario_err)?;
 
-        validate_command(basedir, &cmd)
-            .map_err(|err| YgError::Scenario(filename.to_string(), err))?;
+        validate_command(basedir, &cmd).map_err(scenario_err)?;
         // print!("{:?}", cmd);
         info!("{}", cmd);
 
