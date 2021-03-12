@@ -1,15 +1,14 @@
-use super::{validators, Command};
+use super::{Command, Validators};
 use crate::YgScenarioResult;
 
 pub(crate) fn validate_run(command: &Command) -> YgScenarioResult<()> {
-    validators::has_no_back_reference(&command)?;
-    validators::has_args(&command)?;
+    command.has_no_back_reference()?.has_args()?;
 
     Ok(())
 }
 
 pub(crate) fn validate_conditional(command: &Command) -> YgScenarioResult<()> {
-    validators::has_args(&command)?;
+    command.has_args()?;
 
     Ok(())
 }

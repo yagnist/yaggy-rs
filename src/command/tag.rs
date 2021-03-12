@@ -1,10 +1,8 @@
-use super::{validators, Command};
+use super::{Command, Validators};
 use crate::YgScenarioResult;
 
 pub(crate) fn validate_tag(command: &Command) -> YgScenarioResult<()> {
-    validators::has_no_reference(&command)?;
-    validators::has_no_back_reference(&command)?;
-    validators::has_args(&command)?;
+    command.has_no_reference()?.has_no_back_reference()?.has_args()?;
 
     // TODO
     // validate tag
@@ -13,9 +11,7 @@ pub(crate) fn validate_tag(command: &Command) -> YgScenarioResult<()> {
 }
 
 pub(crate) fn validate_untag(command: &Command) -> YgScenarioResult<()> {
-    validators::has_no_reference(&command)?;
-    validators::has_no_back_reference(&command)?;
-    validators::has_args(&command)?;
+    command.has_no_reference()?.has_no_back_reference()?.has_args()?;
 
     // TODO
     // validate untag

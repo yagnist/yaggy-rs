@@ -8,6 +8,7 @@ mod tag;
 mod vars;
 
 mod validators;
+pub(crate) use validators::Validators;
 
 use std::fmt;
 use std::path::Path;
@@ -120,7 +121,7 @@ pub(crate) fn validate_command(
         Connect | Disconnect => connect::validate(&command),
         Reconnect => connect::validate_reconnect(&command),
         ReconnectIf => connect::validate_reconnect_if(&command),
-        Vars | Secrets => vars::validate(&basedir, &command),
+        Vars | Secrets => vars::validate(&command, &basedir),
         Sync => sync::validate(&command),
         Echo => echo::validate(&command),
         Fetch => fetch::validate(&command),
