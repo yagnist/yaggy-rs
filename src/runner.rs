@@ -7,10 +7,7 @@ use clap::ArgMatches;
 
 use log::{debug, error, info, trace, warn};
 
-use crate::{
-    validate_command, Scenario, YgError, YgIoError, YgPath, YgResult,
-    YgScenarioError,
-};
+use crate::{Scenario, YgIoError, YgPath, YgResult};
 use remote_params::RemoteParams;
 
 #[derive(Debug)]
@@ -124,44 +121,10 @@ impl<'a> Runner<'a> {
         warn!("here goes some warning...");
         error!("ooops, something bad happened...");
 
-        run_included(filename_str)
+        let scenario = Scenario::new(filename_str);
+
+        scenario.validate()?;
+
+        Ok(())
     }
-}
-
-fn run_included(filename: &str) -> YgResult<()> {
-    let scenario_err = |err| YgError::Scenario(filename.to_string(), err);
-
-    let scenario = Scenario::new(filename);
-    let commands = scenario.commands().map_err(scenario_err)?;
-    let basedir = Path::new(filename).yg_basedir()?;
-
-    for cmd in commands {
-        let cmd = cmd.map_err(scenario_err)?;
-
-        validate_command(basedir, &cmd).map_err(scenario_err)?;
-        // print!("{:?}", cmd);
-        info!("{}", cmd);
-
-        if cmd.is_include() {
-            let path = Path::new(filename).parent().ok_or_else(|| {
-                YgError::Scenario(
-                    filename.to_string(),
-                    YgScenarioError::IncludeError(cmd.line_num),
-                )
-            })?;
-            let to_include = path.join(cmd.parsed.args.as_str());
-            let to_include = to_include.to_str().ok_or_else(|| {
-                YgError::Scenario(
-                    filename.to_string(),
-                    YgScenarioError::UnicodeError(
-                        cmd.line_num,
-                        cmd.parsed.args,
-                    ),
-                )
-            })?;
-            run_included(to_include)?;
-        }
-    }
-
-    Ok(())
 }

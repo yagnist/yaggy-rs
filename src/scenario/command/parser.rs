@@ -15,7 +15,7 @@ impl fmt::Display for ParseError {
     }
 }
 
-pub type ParsedResult = Result<ParsedLine, ParseError>;
+pub type ValidationResult<T> = Result<T, String>;
 
 enum State {
     Start,
@@ -145,15 +145,59 @@ impl fmt::Display for ParsedLine {
 }
 
 impl ParsedLine {
-    pub fn has_reference(&self) -> bool {
-        !self.reference.is_empty()
+    pub(super) fn new(
+        reference: &str,
+        command: &str,
+        back_reference: &str,
+        args: &str,
+    ) -> Self {
+        ParsedLine {
+            reference: reference.to_string(),
+            command: command.to_string(),
+            back_reference: back_reference.to_string(),
+            args: args.to_string(),
+        }
+    }
+    pub(super) fn has_no_reference(&self) -> ValidationResult<()> {
+        if !self.reference.is_empty() {
+            return Err(
+                "Reference is not allowed for this command".to_string()
+            );
+        }
+        Ok(())
     }
 
-    pub fn has_back_reference(&self) -> bool {
-        !self.back_reference.is_empty()
+    pub(super) fn has_back_reference(&self) -> ValidationResult<()> {
+        if self.back_reference.is_empty() {
+            return Err(
+                "This command requires back reference to be specified"
+                    .to_string(),
+            );
+        }
+        Ok(())
+    }
+    pub(super) fn has_no_back_reference(&self) -> ValidationResult<()> {
+        if !self.back_reference.is_empty() {
+            return Err(
+                "Back reference is not allowed for this command".to_string()
+            );
+        }
+        Ok(())
     }
 
-    pub fn has_args(&self) -> bool {
-        !self.args.is_empty()
+    pub(super) fn has_args(&self) -> ValidationResult<()> {
+        if self.args.is_empty() {
+            return Err("This command requires some arguments".to_string());
+        }
+        Ok(())
+    }
+
+    pub(super) fn has_no_args(&self) -> ValidationResult<()> {
+        if !self.args.is_empty() {
+            return Err(
+                "This command does not expect any arguments".to_string()
+            );
+        }
+        Ok(())
     }
 }

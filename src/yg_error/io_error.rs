@@ -1,5 +1,8 @@
 use std::fmt;
 use std::io;
+use std::result::Result as StdResult;
+
+pub(crate) type YgIoResult<T> = StdResult<T, YgIoError>;
 
 #[derive(Debug)]
 pub(crate) enum YgIoError {
